@@ -90,6 +90,30 @@ onMounted (()=>{
     scene.add(capsule)
     console.log('worldOctree', worldOctree)
     console.log('playerCollider', playerCollider)
+
+    document.addEventListener(
+        'keydown',
+        (e) => {
+          var ev = e || window.event
+          switch (ev.keyCode) {
+            case 87:
+              cube.position.z -= 0.05
+              break
+            case 83:
+              cube.position.z += 0.05
+              break
+            case 65:
+              cube.position.x -= 0.05
+              break
+            case 68:
+              cube.position.x += 0.05
+              break
+            default:
+              break
+          }
+        },
+        false
+    )
 });
 
 

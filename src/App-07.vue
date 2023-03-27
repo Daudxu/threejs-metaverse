@@ -252,24 +252,7 @@ onMounted (()=>{
         }
     }
 
-    // 多层次细节展示
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      wireframe: true,
-    });
-    let lod = new THREE.LOD();
-    for (let i = 0; i < 5; i++) {
-      const geometry = new THREE.SphereBufferGeometry(1, 22 - i * 5, 22 - i * 5);
-
-      const mesh = new THREE.Mesh(geometry, material);
-
-      lod.addLevel(mesh, i * 5);
-    }
-    let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
-    mesh.visible = false;
-    lod.addLevel(mesh, 25);
-    lod.position.set(10, 0, 10);
-    scene.add(lod);
+    
     animate();
 });
 

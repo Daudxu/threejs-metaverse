@@ -3,8 +3,8 @@ import * as THREE from 'three'
 import  Stats  from "three/examples/jsm/libs/stats.module"
 import  { Octree }  from "three/examples/jsm/math/Octree.js"
 import { Capsule } from "three/examples/jsm/math/Capsule.js"
-// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
-import { OctreeHelper } from "three/examples/jsm/helpers/OctreeHelper.js";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+
 import { onMounted, reactive } from 'vue'
 
 onMounted (()=>{
@@ -36,8 +36,8 @@ onMounted (()=>{
     stats.domElement.style.top = '0px';
     container.appendChild(stats.domElement);
     
-    // const controls = new OrbitControls(camera, renderer.domElement);
-    // controls.target.set(0, 0, 0);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0, 0);
 
     function animate() {
       let delta = clock.getDelta();
@@ -45,7 +45,7 @@ onMounted (()=>{
       updatePlayer(delta)
       resetPlayer()
       stats.update();
-      // controls.update();
+      controls.update();
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
     }
@@ -60,24 +60,13 @@ onMounted (()=>{
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
 
-    // 创建立方体叠楼梯的效果
-    for (let i = 0; i < 10; i++) {
-      const boxGeometry = new THREE.BoxGeometry(1, 1, 0.15);
-      const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      const box = new THREE.Mesh(boxGeometry, boxMaterial);
-      box.position.y = 0.15 + i * 0.15;
-      box.position.z = i * 0.3;
-      plane.add(box);
-    }
-
     // 创建一个octree
     const group = new THREE.Group();
     group.add(plane);
     scene.add(group);
     const worldOctree = new Octree();
     worldOctree.fromGraphNode(group);
-    const octreeHelper = new OctreeHelper(worldOctree)
-    scene.add(octreeHelper)
+
     // 创建一个人的碰撞体
     const playerCollider = new Capsule(
       new THREE.Vector3(0, 0.35, 0),
@@ -87,14 +76,6 @@ onMounted (()=>{
     console.log('worldOctree', worldOctree)
     console.log('playerCollider', playerCollider)
 
-    // 创建胶囊的眼睛
-    const capsuleBodyGeometry = new THREE.PlaneGeometry(1, 0.5, 1, 1);
-    const capsuleBodyMaterial = new THREE.MeshBasicMaterial({
-      color: 0x0000ff,
-      side: THREE.DoubleSide,
-    });
-    const capsuleBody = new THREE.Mesh(capsuleBodyGeometry, capsuleBodyMaterial);
-    capsuleBody.position.set(0, 0.5, 0);
     // 创建胶囊几何体
     const capsuleGeometry  = new THREE.CapsuleGeometry(0.35, 1, 32);
     const capsuleMaterial = new THREE.MeshBasicMaterial({
@@ -104,11 +85,6 @@ onMounted (()=>{
     const capsule = new THREE.Mesh(capsuleGeometry, capsuleMaterial)
     capsule.position.set(0, 0.85, 0);
     capsule.castShadow = true;
-    camera.position.set(0, 2, -5);
-    camera.lookAt(capsule.position);
-    // controls.target = capsule.position;
-    capsule.add(camera)
-    capsule.add(capsuleBody)
     scene.add(capsule)
 
     // 设置重力
@@ -171,105 +147,37 @@ onMounted (()=>{
 
     // 更新键盘状态
     document.addEventListener(
-      "keydown",
-      (event) => {
-        console.log(event.code);
-        keyStates[event.code] = true;
-        keyStates.isDown = true;
-      },
-      false
-    );
+    "keydown",
+    (event) => {
+      console.log(event.code);
+      keyStates[event.code] = true;
+      keyStates.isDown = true;
+    },
+    false
+  );
 
-    document.addEventListener(
-      "keyup",
-      (event) => {
-        keyStates[event.code] = false;
-        keyStates.isDown = false;
-      },
-      false
-    );
-    // 根据鼠标在屏幕移动，来旋转胶囊
-    window.addEventListener(
-      "mousemove",
-      (event) => {
-        capsule.rotation.y -= event.movementX * 0.003;
-      },
-      false
-    );
-
-    document.addEventListener(
-      "mousedown",
-      (event) => {
-        // 锁定鼠标指针
-        document.body.requestPointerLock();
-      },
-      false
-    );
+  document.addEventListener(
+    "keyup",
+    (event) => {
+      keyStates[event.code] = false;
+      keyStates.isDown = false;
+    },
+    false
+  );
 
     // 更新键盘状态更新玩家的速度
     function controlsPlay(deltaTime){
         if(keyStates['KeyW']){
+          console.log("========")
           playerDirection.Z = 1;
           // 获取脚男的正面前面方向
           const caosuleFront = new THREE.Vector3(0, 0, 0);
           capsule.getWorldDirection(caosuleFront);
           // 计算玩家的速度
           playerVelocity.add(caosuleFront.multiplyScalar(deltaTime))
-        }
-        if (keyStates["KeyS"]) {
-          playerDirection.z = 1;
-          //获取胶囊的正前面方向
-          const capsuleFront = new THREE.Vector3(0, 0, 0);
-          capsule.getWorldDirection(capsuleFront);
-          // console.log(capsuleFront);
-          // 计算玩家的速度
-          playerVelocity.add(capsuleFront.multiplyScalar(-deltaTime));
-        }
-        if(keyStates["KeyA"]) {
-          playerDirection.x = 1;
-          //获取胶囊的正前面方向
-          const capsuleFront = new THREE.Vector3(0, 0, 0);
-          capsule.getWorldDirection(capsuleFront);
-          // 向量积
-          // 侧方的方向，正前面的方向和胶囊的正上方求叉积，求出侧方的方向
-          capsuleFront.cross(capsule.up);
-          playerVelocity.add(capsuleFront.multiplyScalar(-deltaTime));
-        }
-        if(keyStates["KeyD"]) {
-          playerDirection.x = 1;
-          //获取胶囊的正前面方向
-          const capsuleFront = new THREE.Vector3(0, 0, 0);
-          capsule.getWorldDirection(capsuleFront);
-
-          // 侧方的方向，正前面的方向和胶囊的正上方求叉积，求出侧方的方向
-          capsuleFront.cross(capsule.up);
-          playerVelocity.add(capsuleFront.multiplyScalar(deltaTime));
-        }
-        if (keyStates["Space"]) {
-          if(playerVelocity.y === 0) {
-            playerVelocity.y = 1.5;
-          }
+          // J
         }
     }
-
-    // 多层次细节展示
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      wireframe: true,
-    });
-    let lod = new THREE.LOD();
-    for (let i = 0; i < 5; i++) {
-      const geometry = new THREE.SphereBufferGeometry(1, 22 - i * 5, 22 - i * 5);
-
-      const mesh = new THREE.Mesh(geometry, material);
-
-      lod.addLevel(mesh, i * 5);
-    }
-    let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
-    mesh.visible = false;
-    lod.addLevel(mesh, 25);
-    lod.position.set(10, 0, 10);
-    scene.add(lod);
     animate();
 });
 

@@ -21,14 +21,6 @@ onMounted (()=>{
     )
     camera.position.set(0, 5, 10)
     
-    const backCamera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.001,
-      1000
-    );
-    backCamera.position.set(0, 5, -10);
-
     const container = document.getElementById("container");
     const renderer = new THREE.WebGL1Renderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -46,7 +38,7 @@ onMounted (()=>{
     
     // const controls = new OrbitControls(camera, renderer.domElement);
     // controls.target.set(0, 0, 0);
-    let activeCamera = camera
+
     function animate() {
       let delta = clock.getDelta();
       controlsPlay(delta)
@@ -54,8 +46,7 @@ onMounted (()=>{
       resetPlayer()
       stats.update();
       // controls.update();
-
-      renderer.render(scene, activeCamera);
+      renderer.render(scene, camera);
       requestAnimationFrame(animate);
     }
 
@@ -115,15 +106,8 @@ onMounted (()=>{
     capsule.castShadow = true;
     camera.position.set(0, 2, -5);
     camera.lookAt(capsule.position);
-    backCamera.position.set(0, 2, 5);
-    backCamera.lookAt(capsule.position);
-    // 控制旋转上下的空3D对象
-    const capsuleBodyControl = new THREE.Object3D();
-    capsuleBodyControl.add(camera);
-    capsuleBodyControl.add(backCamera);
-    capsule.add(capsuleBodyControl)
     // controls.target = capsule.position;
-    // capsule.add(camera)
+    capsule.add(camera)
     capsule.add(capsuleBody)
     scene.add(capsule)
 
@@ -201,9 +185,6 @@ onMounted (()=>{
       (event) => {
         keyStates[event.code] = false;
         keyStates.isDown = false;
-        if(event.code === "KeyV"){
-           activeCamera = activeCamera === camera ? backCamera : camera
-        }
       },
       false
     );
@@ -212,12 +193,6 @@ onMounted (()=>{
       "mousemove",
       (event) => {
         capsule.rotation.y -= event.movementX * 0.003;
-        capsuleBodyControl.rotation.x += event.movementY * 0.003;
-        if(capsuleBodyControl.rotation.x > Math.PI / 8){
-          capsuleBodyControl.rotation.x = Math.PI / 8;
-        }else if(capsuleBodyControl.rotation.x < -Math.PI / 8){
-          capsuleBodyControl.rotation.x = -Math.PI / 8;
-        }
       },
       false
     );

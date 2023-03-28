@@ -8,7 +8,7 @@ import { OctreeHelper } from "three/examples/jsm/helpers/OctreeHelper.js";
 import { onMounted, reactive } from 'vue'
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js"
 onMounted (()=>{
     const clock = new THREE.Clock();
     const scene = new THREE.Scene();
@@ -69,47 +69,37 @@ onMounted (()=>{
     plane.rotation.x = -Math.PI / 2;
     scene.add(plane)
 
-    const geometry = new THREE.TorusKnotBufferGeometry(1, 0.3, 100, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-
-    // for(let i = 0; i < 1000; i++){
-    //   const torusKnot = new THREE.Mesh(geometry, material);
-    //   torusKnot.position.set(
-    //     Math.random() * 100 - 50,
-    //     Math.random() * 20 - 5,
-    //     Math.random() * 100 - 50
-    //   )
-    //   scene.add(torusKnot)
-    // }
-
-    const instanceMesh = new THREE.InstancedMesh(geometry, material, 10000);
-    for(let i = 0; i < 10000; i++) {
-      const position = new THREE.Vector3(
-        Math.random() * 100 -50,
-        Math.random() * 100 -50,
-        Math.random() * 100 -50
+    // const geometry = new THREE.TorusKnotBufferGeometry(1, 0.3, 100, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0x22ff00 });
+    let geometryes = [];
+    for(let i = 0; i<1000; i++){
+      const geometry = new THREE.TorusKnotBufferGeometry(
+        0.5 + Math.random() * 0.5,
+        0.3,
+        50+ parseInt(Math.random() * 50),
+        16
       )
-
-      const rotation = new THREE.Euler(
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2,
-        Math.random() * Math.PI * 2
-      )
-      // 四元数用于表示旋转
-      const quaternion = new THREE.Quaternion().setFromEuler(rotation);
-      const scale = new THREE.Vector3(
+      const matrix = new THREE.Matrix4();
+      matrix.makeRotationX(Math.random() * Math.PI);
+      matrix.makeRotationY(Math.random() * Math.PI);
+      matrix.makeRotationZ(Math.random() * Math.PI);
+      matrix.makeScale(
         Math.random() * 0.5 + 0.5,
         Math.random() * 0.5 + 0.5,
         Math.random() * 0.5 + 0.5
       )
-      let matrix = new THREE.Matrix4();
-      matrix.compose(position, quaternion, scale);
+      matrix.makeTranslation(
+        Math.random() * 100 - 50,
+        Math.random() * 100 - 50,
+        Math.random() * 100 - 50
+      )
 
-      instanceMesh.setMatrixAt(i, matrix);
-      
+      geometry.applyMatrix4(matrix)
+      geometryes.push(geometry)
     }
-    scene.add(instanceMesh);
-
+    const mergeGeometry = BufferGeometryUtils.mergeBufferGeometries(geometryes)
+    let mesh = new THREE.Mesh(mergeGeometry, material)
+    scene.add(mesh)
     animate();
 });
 

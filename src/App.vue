@@ -8,7 +8,7 @@ import { OctreeHelper } from "three/examples/jsm/helpers/OctreeHelper.js";
 import { onMounted, reactive } from 'vue'
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js"
 onMounted (()=>{
     const clock = new THREE.Clock();
     const scene = new THREE.Scene();
@@ -69,20 +69,36 @@ onMounted (()=>{
     plane.rotation.x = -Math.PI / 2;
     scene.add(plane)
 
-    const geometry = new THREE.TorusKnotBufferGeometry(1, 0.3, 100, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-
-    for(let i = 0; i < 1000; i++){
-      const torusKnot = new THREE.Mesh(geometry, material);
-      torusKnot.position.set(
+    // const geometry = new THREE.TorusKnotBufferGeometry(1, 0.3, 100, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0x22ff00 });
+    let geometryes = [];
+    for(let i = 0; i<1000; i++){
+      const geometry = new THREE.TorusKnotBufferGeometry(
+        0.5 + Math.random() * 0.5,
+        0.3,
+        50+ parseInt(Math.random() * 50),
+        16
+      )
+      const matrix = new THREE.Matrix4();
+      matrix.makeRotationX(Math.random() * Math.PI);
+      matrix.makeRotationY(Math.random() * Math.PI);
+      matrix.makeRotationZ(Math.random() * Math.PI);
+      matrix.makeScale(
+        Math.random() * 0.5 + 0.5,
+        Math.random() * 0.5 + 0.5,
+        Math.random() * 0.5 + 0.5
+      )
+      matrix.makeTranslation(
         Math.random() * 100 - 50,
-        Math.random() * 20 - 5,
+        Math.random() * 100 - 50,
         Math.random() * 100 - 50
       )
-      scene.add(torusKnot)
+      geometry.applyMatrix4(matrix)
+      geometryes.push(geometry)
     }
-
-
+    const mergeGeometry = BufferGeometryUtils.mergeBufferGeometries(geometryes)
+    let mesh = new THREE.Mesh(mergeGeometry, material)
+    scene.add(mesh)
     animate();
 });
 

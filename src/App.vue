@@ -1,5 +1,8 @@
 <template>
   <div id="container"></div>
+  <div class="cl-option">
+    <button @click="handleClickAddAvatar"> dd Avatar</button>
+  </div>
 </template>
 
 <script setup>
@@ -18,7 +21,13 @@ import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 import { reactive, onMounted, ref } from "vue";
+
+import io from 'socket.io-client'
+
+const socket = io('http://localhost:3000');
+
 let leftPress;
+
 onMounted(() => {
   const clock = new THREE.Clock();
 
@@ -464,9 +473,22 @@ onMounted(() => {
     sound2.setRefDistance(1);
   });
   sphere2.add(sound2);
-
+  socket.on("connect", () => {
+    console.log('ok'); 
+  });
+  socket.on("message", (e) => {
+    console.log('message', e); 
+  });
   animate();
 });
+
+const handleClickAddAvatar = () => {
+  // console.log("===")
+  // var avatar = createAvatar()
+  // avatar.position.set(Math.random() * 10 - 2, Math.random() * 10 - 2, Math.random() * 10 - 2)
+  socket.emit("message", 'test');
+  // scene.add(avatar)
+}
 </script>
 
 <style>
@@ -477,5 +499,11 @@ onMounted(() => {
 #container {
   width: 100vw;
   height: 100vh;
+}
+.cl-option {
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 99999;
 }
 </style>

@@ -105,7 +105,6 @@ onMounted(() => {
     plane.material.needsUpdate = true;
   };
   document.body.appendChild(canvas);
-
   animate();
 });
 </script>

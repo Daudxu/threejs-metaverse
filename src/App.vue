@@ -57,24 +57,12 @@ onMounted(() => {
 
   function animate() {
     let delta = clock.getDelta();
-
+    drawVideoText();
     stats.update();
     controls.update();
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }
-
-  // 创建一个平面
-  const planeGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
-  const planeMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    side: THREE.DoubleSide,
-    transparent: true,
-    // blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-  scene.add(plane);
 
   let alphaMap = new THREE.TextureLoader().load("./textures/chat_alpha.png");
 
@@ -90,20 +78,41 @@ onMounted(() => {
   canvas.style.transform = "scale(0.1)";
   const context = canvas.getContext("2d");
 
-  var image = new Image();
-  image.src = "./textures/chat.png";
-  image.onload = function () {
-    context.drawImage(image, 0, 0, 1080, 1080);
+  const video = document.createElement("video");
+  video.src = "./video/ui_chat.mp4";
+  // 如果想要视频能够自动播放，那么就设置为静音
+  video.muted = true;
+  video.loop = true;
+  video.play();
+  const texture = new THREE.CanvasTexture(canvas);
+
+  // 创建一个平面
+  const planeGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
+  const planeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide,
+    map: texture,
+    alphaMap: texture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  scene.add(plane);
+
+  function drawVideoText() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.font = "bold 100px Arial";
-    context.fillStyle = "rgba(0,255,255,1)";
-    context.fillText("Hello World", canvas.width / 2, canvas.height / 2);
-    let texture = new THREE.CanvasTexture(canvas);
-    plane.material.map = texture;
-    plane.material.alphaMap = texture;
-    plane.material.needsUpdate = true;
-  };
+    context.fillStyle = "rgba(255,255,255,1)";
+    context.fillText("Hello World", canvas.width / 2, canvas.height / 2.5);
+
+    texture.needsUpdate = true;
+    planeMaterial.needsUpdate = true;
+  }
   document.body.appendChild(canvas);
 
   animate();

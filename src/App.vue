@@ -1,129 +1,302 @@
-<template>
-  <div id="container"></div>
-  <div class="cl-option">
-    <button @click="handleClickAddAvatar"> dd Avatar</button>
-  </div>
-</template>
-
 <script setup>
-import * as THREE from "three";
-import Stats from "three/examples/jsm/libs/stats.module.js";
-
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-
-import { Octree } from "three/examples/jsm/math/Octree.js";
+import * as THREE from 'three'
+import  Stats  from "three/examples/jsm/libs/stats.module"
+import  { Octree }  from "three/examples/jsm/math/Octree.js"
+import { Capsule } from "three/examples/jsm/math/Capsule.js"
+// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { OctreeHelper } from "three/examples/jsm/helpers/OctreeHelper.js";
+import { onMounted, reactive } from 'vue'
 
-import { Capsule } from "three/examples/jsm/math/Capsule.js";
+onMounted (()=>{
+    const clock = new THREE.Clock();
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x88ccee);
+    scene.fog = new THREE.Fog(0x88ccee, 0, 50);
 
-import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.001,
+      1000
+    )
+    camera.position.set(0, 5, 10)
+    
+    const container = document.getElementById("container");
+    const renderer = new THREE.WebGL1Renderer({ antialias: true })
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.VSMShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    container.appendChild(renderer.domElement)
+    
+    const stats = new Stats();
+    stats.domElement.style.position = "absolute";
+    stats.domElement.style.top = '0px';
+    container.appendChild(stats.domElement);
+    
+    // const controls = new OrbitControls(camera, renderer.domElement);
+    // controls.target.set(0, 0, 0);
 
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+    function animate() {
+      let delta = clock.getDelta();
+      controlsPlay(delta)
+      updatePlayer(delta)
+      resetPlayer()
+      stats.update();
+      // controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
 
-import { reactive, onMounted, ref } from "vue";
+    // 创建一个平面
+    const planeGeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
+    const planMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide
+    });
+    const plane = new THREE.Mesh(planeGeometry, planMaterial);
+    plane.receiveShadow = true;
+    plane.rotation.x = -Math.PI / 2;
 
-import io from 'socket.io-client'
-import TWEEN from '@tweenjs/tween.js'
-import gsap from "gsap"
+    // 创建立方体叠楼梯的效果
+    for (let i = 0; i < 10; i++) {
+      const boxGeometry = new THREE.BoxGeometry(1, 1, 0.15);
+      const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      const box = new THREE.Mesh(boxGeometry, boxMaterial);
+      box.position.y = 0.15 + i * 0.15;
+      box.position.z = i * 0.3;
+      plane.add(box);
+    }
 
-const socket = io('http://localhost:3000');
+    // 创建一个octree
+    const group = new THREE.Group();
+    group.add(plane);
+    scene.add(group);
+    const worldOctree = new Octree();
+    worldOctree.fromGraphNode(group);
+    const octreeHelper = new OctreeHelper(worldOctree)
+    scene.add(octreeHelper)
+    // 创建一个人的碰撞体
+    const playerCollider = new Capsule(
+      new THREE.Vector3(0, 0.35, 0),
+      new THREE.Vector3(0, 1.35, 0),
+      0.35
+    );
+    console.log('worldOctree', worldOctree)
+    console.log('playerCollider', playerCollider)
 
-let leftPress;
+    // 创建胶囊的眼睛
+    const capsuleBodyGeometry = new THREE.PlaneGeometry(1, 0.5, 1, 1);
+    const capsuleBodyMaterial = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      side: THREE.DoubleSide,
+    });
+    const capsuleBody = new THREE.Mesh(capsuleBodyGeometry, capsuleBodyMaterial);
+    capsuleBody.position.set(0, 0.5, 0);
+    // 创建胶囊几何体
+    const capsuleGeometry  = new THREE.CapsuleGeometry(0.35, 1, 32);
+    const capsuleMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      side: THREE.DoubleSide
+    });
+    const capsule = new THREE.Mesh(capsuleGeometry, capsuleMaterial)
+    capsule.position.set(0, 0.85, 0);
+    capsule.castShadow = true;
+    camera.position.set(0, 2, -5);
+    camera.lookAt(capsule.position);
+    // 控制旋转上下的空3D对象
+    const capsuleBodyControl = new THREE.Object3D();
+    capsuleBodyControl.add(camera);
+    capsule.add(capsuleBodyControl)
+    // controls.target = capsule.position;
+    // capsule.add(camera)
+    capsule.add(capsuleBody)
+    scene.add(capsule)
 
-onMounted(() => {
-  // 场景
-  const scene = new THREE.Scene();
-  // 相机
-  const camera = new THREE.PerspectiveCamera(
-    70,
-    window.innerWidth / window.innerHeight,
-    0.001,
-    1000
-  );
-  camera.position.set(0, 5, 10);
+    // 设置重力
+    const gravity = -0.85;
+    // 玩家速度
+    const  playerVelocity = new THREE.Vector3(0, 0, 0);
+    // 方向向量
+    const playerDirection = new THREE.Vector3(0, 0, 0); 
+    //  键盘按下事件
+    const keyStates = {
+      KeyW: false,
+      KeyA: false,
+      KeyS: false,
+      KeyD: false,
+      Space: false,
+      isDown: false,
+    };
 
-  // 模型
-  const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-  let model =  new THREE.Mesh( geometry, material );
-  scene.add( model );
-  // 目标位置点
-  const targetPos = new THREE.Vector3(10,10,10)   
-  // 目标移动时的朝向偏移
-  const offsetAngle = Math.PI/2  
-  // 创建一个4维矩阵
-  var mtx = new THREE.Matrix4()
-  // 设置朝向
-  mtx.lookAt(model.position.clone() , targetPos , model.up) 
-  mtx.multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0 , offsetAngle, 0 )))
-  // 计算出需要进行旋转的四元数值
-  var toRot = new THREE.Quaternion().setFromRotationMatrix(mtx)
-  // 使用Tween线性改变model的position。此处的action方法Tween官方可能没有，你可以使用Tween的其他方法，只要能线性插值改变position就可以了。
-  // TWEEN.action(model.position , 1000 , targetPos ,TWEEN.linear,function(){
-  //   //oncomplete
-  //   },function(){
-  //     //onupdate
-  //     model.quaternion.slerp(toRot , 0.2)  //应用旋转。0.2代表插值step。可以做到平滑旋转过渡
-  //   }
-  // )
+    // 玩家是否在地面上
+    let playerOnFloor = false;
+    // 更新玩家数据
+    function updatePlayer(deltaTime) {
+      let damping = -0.05;
+      if (playerOnFloor) {
+        playerVelocity.y = 0;
+        keyStates.isDown ||
+        playerVelocity.addScaledVector(playerVelocity, damping);
+      } else {
+        playerVelocity.y += gravity * deltaTime;
+      }
+      // 计算移动距离
+      const playerMoveDistance = playerVelocity.clone().multiplyScalar(deltaTime);
+      playerCollider.translate(playerMoveDistance)
+      // 设置胶囊位置
+      playerCollider.getCenter(capsule.position)
+      // 碰撞检测
+      playerCollisions();
+    }
+    
+    function playerCollisions() {
+      // 人物碰撞检测
+      const result = worldOctree.capsuleIntersect(playerCollider);
+      // console.log(result);
+      playerOnFloor = false;
+      if (result) {
+        playerOnFloor = result.normal.y > 0;
+        playerCollider.translate(result.normal.multiplyScalar(result.depth));
+      }
+    }
 
-// 添加动画
-gsap.to(
-   model.position,
-    {
-        x: 10,
-        duration: 5,
-        ease: 'power1.inOut', 
-        repeat: -1,
-        yoyo: true, 
-        onUpdate(){
-          model.quaternion.slerp(toRot , 0.2)
+    function resetPlayer() {
+      if (capsule.position.y < -20) {
+        playerCollider.start.set(0, 2.35, 0);
+        playerCollider.end.set(0, 3.35, 0);
+        playerCollider.radius = 0.35;
+        playerVelocity.set(0, 0, 0);
+        playerDirection.set(0, 0, 0);
+      }
+    }
+
+    // 更新键盘状态
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        console.log(event.code);
+        keyStates[event.code] = true;
+        keyStates.isDown = true;
+      },
+      false
+    );
+
+    document.addEventListener(
+      "keyup",
+      (event) => {
+        keyStates[event.code] = false;
+        keyStates.isDown = false;
+      },
+      false
+    );
+    // 根据鼠标在屏幕移动，来旋转胶囊
+    window.addEventListener(
+      "mousemove",
+      (event) => {
+        capsule.rotation.y -= event.movementX * 0.003;
+        capsuleBodyControl.rotation.x += event.movementY * 0.003;
+      },
+      false
+    );
+
+    document.addEventListener(
+      "mousedown",
+      (event) => {
+        // 锁定鼠标指针
+        document.body.requestPointerLock();
+      },
+      false
+    );
+
+    // 更新键盘状态更新玩家的速度
+    function controlsPlay(deltaTime){
+        if(keyStates['KeyW']){
+          playerDirection.Z = 1;
+          // 获取脚男的正面前面方向
+          const caosuleFront = new THREE.Vector3(0, 0, 0);
+          capsule.getWorldDirection(caosuleFront);
+          // 计算玩家的速度
+          playerVelocity.add(caosuleFront.multiplyScalar(deltaTime))
+        }
+        if (keyStates["KeyS"]) {
+          playerDirection.z = 1;
+          //获取胶囊的正前面方向
+          const capsuleFront = new THREE.Vector3(0, 0, 0);
+          capsule.getWorldDirection(capsuleFront);
+          // console.log(capsuleFront);
+          // 计算玩家的速度
+          playerVelocity.add(capsuleFront.multiplyScalar(-deltaTime));
+        }
+        if(keyStates["KeyA"]) {
+          playerDirection.x = 1;
+          //获取胶囊的正前面方向
+          const capsuleFront = new THREE.Vector3(0, 0, 0);
+          capsule.getWorldDirection(capsuleFront);
+          // 向量积
+          // 侧方的方向，正前面的方向和胶囊的正上方求叉积，求出侧方的方向
+          capsuleFront.cross(capsule.up);
+          playerVelocity.add(capsuleFront.multiplyScalar(-deltaTime));
+        }
+        if(keyStates["KeyD"]) {
+          playerDirection.x = 1;
+          //获取胶囊的正前面方向
+          const capsuleFront = new THREE.Vector3(0, 0, 0);
+          capsule.getWorldDirection(capsuleFront);
+
+          // 侧方的方向，正前面的方向和胶囊的正上方求叉积，求出侧方的方向
+          capsuleFront.cross(capsule.up);
+          playerVelocity.add(capsuleFront.multiplyScalar(deltaTime));
+        }
+        if (keyStates["Space"]) {
+          if(playerVelocity.y === 0) {
+            playerVelocity.y = 1.5;
+          }
         }
     }
-)
 
-  model.quaternion.slerp(toRot , 0.2)  
+    // 多层次细节展示
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      wireframe: true,
+    });
+    let lod = new THREE.LOD();
+    for (let i = 0; i < 5; i++) {
+      const geometry = new THREE.SphereBufferGeometry(1, 22 - i * 5, 22 - i * 5);
 
-  const container = document.getElementById("container");
+      const mesh = new THREE.Mesh(geometry, material);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.VSMShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  container.appendChild(renderer.domElement);
+      lod.addLevel(mesh, i * 5);
+    }
+    let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
+    mesh.visible = false;
+    lod.addLevel(mesh, 25);
+    lod.position.set(10, 0, 10);
+    scene.add(lod);
+    animate();
+});
 
-  const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0, 0);
-  function animate() {
-    // let delta = clock.getDelta();
-    // console.log(delta);
-    controls.update();
-    // 更新动作
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
-  }
-
-  animate()
-})
 
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
+<template>
+  <div id="container">
+  </div>
+</template>
+
+<style scoped>
+/* .logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
 }
-#container {
-  width: 100vw;
-  height: 100vh;
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
 }
-.cl-option {
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 99999;
-}
+.logo.vue:hover {
+  filter: drop-shadow(0 0 2em #42b883aa);
+} */
 </style>

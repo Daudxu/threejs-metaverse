@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tweenjs/tween.js": "^19.0.0",
+    "dat.gui": "^0.7.9",
     "gsap": "^3.11.5",
     "socket.io-client": "^4.6.1",
     "three": "^0.150.1",

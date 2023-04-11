@@ -252,7 +252,7 @@ onMounted (()=>{
         }
         if (keyStates["Space"]) {
           if(playerVelocity.y === 0) {
-            playerVelocity.y = 1.5;
+              playerVelocity.y = 1.5;
           }
         }
     }

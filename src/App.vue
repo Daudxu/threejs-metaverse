@@ -77,7 +77,8 @@ onMounted (()=>{
           if(object.name === "KB3D_DLA_BldgMD_H_BaseA_1"){
             object.material.wireframe = true
             // var shape = new CANNON.Trimesh(object.geometry);
-            var shape = new CANNON.Heightfield(object.geometry);
+            // var shape = new CANNON.Heightfield(object.geometry.position.Array);
+            var shape = new CANNON.Trimesh(object.geometry.position.Array);
             var body = new CANNON.Body({ mass: 1 });
             body.addShape( shape );
             // 将物体添加至物理世界

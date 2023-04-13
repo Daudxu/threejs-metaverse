@@ -252,6 +252,11 @@ cannon-es@^0.20.0:
   resolved "https://registry.npmjs.org/cannon-es/-/cannon-es-0.20.0.tgz#bf2f62a674701f37e3d861c90668a32d4d32f082"
   integrity sha512-eZhWTZIkFOnMAJOgfXJa9+b3kVlvG+FX4mdkpePev/w/rP5V8NRquGyEozcjPfEoXUlb+p7d9SUcmDSn14prOA==
 
+cannon@^0.6.2:
+  version "0.6.2"
+  resolved "https://registry.npmjs.org/cannon/-/cannon-0.6.2.tgz#1e7bc72dd5841982f3c104c2bc578bfa4fb1c572"
+  integrity sha512-n/7wWSXr8KOSvjad2x0fJHgpMepKjOKi+NdSnjfYyijoDBZnp4JQKgPcpv28jlXoWM+N9zVYU09J0A6Qxx+Y7w==
+
 csstype@^2.6.8:
   version "2.6.21"
   resolved "https://registry.npmjs.org/csstype/-/csstype-2.6.21.tgz#2efb85b7cc55c80017c66a5ad7cbd931fda3a90e"
@@ -357,6 +362,11 @@ lil-gui@~0.17.0:
   resolved "https://registry.npmjs.org/lil-gui/-/lil-gui-0.17.0.tgz#b41ae55d0023fcd9185f7395a218db0f58189663"
   integrity sha512-MVBHmgY+uEbmJNApAaPbtvNh1RCAeMnKym82SBjtp5rODTYKWtM+MXHCifLe2H2Ti1HuBGBtK/5SyG4ShQ3pUQ==
 
+lodash@^4.17.21:
+  version "4.17.21"
+  resolved "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
+  integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
+
 magic-string@^0.25.7:
   version "0.25.9"
   resolved "https://registry.npmjs.org/magic-string/-/magic-string-0.25.9.tgz#de7f9faf91ef8a1c91d02c2e5314c8277dbcdd1c"
@@ -454,10 +464,10 @@ three-to-cannon@^4.3.0:
   dependencies:
     "@types/three" ">=0.142.0"
 
-three@^0.150.1:
-  version "0.150.1"
-  resolved "https://registry.npmjs.org/three/-/three-0.150.1.tgz#870d324a4d2daf1c7d55be97f3f73d83783e28be"
-  integrity sha512-5C1MqKUWaHYo13BX0Q64qcdwImgnnjSOFgBscOzAo8MYCzEtqfQqorEKMcajnA3FHy1yVlIe9AmaMQ0OQracNA==
+three@0.113.0:
+  version "0.113.0"
+  resolved "https://registry.npmjs.org/three/-/three-0.113.0.tgz#b5f82500a34eaca43fe3305e163eefe38b4c3221"
+  integrity sha512-H1IuGiyyBciP+L8fM5WCgXSm/nYbLr+tGgY9WWu7PPBxDxki/XJovC/Hz5JI/V7d6kx+1R/8zXWEmsIotLH/aA==
 
 vite@^4.2.0:
   version "4.2.1"

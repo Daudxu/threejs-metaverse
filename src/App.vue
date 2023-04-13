@@ -51,7 +51,7 @@ onMounted (()=>{
 
     // 创建物理世界
     const world = new CANNON.World();
-    world.gravity.set(0, -100, 0);
+    world.gravity.set(0, -8.5, 0);
 
     const cannonDebugger = new CannonDebugger(scene, world, {})
 
@@ -83,22 +83,24 @@ onMounted (()=>{
                   {
                     // Convex doesn't work! Stick to boxes!
                     if (child.userData.type === 'box'){
-                      // let phys = new BoxCollider({size: new THREE.Vector3(child.scale.x, child.scale.y, child.scale.z)});
-                      // phys.body.position.copy(Utils.cannonVector(child.position));
-                      // phys.body.quaternion.copy(Utils.cannonQuat(child.quaternion));
-                      // phys.body.computeAABB();
+                      let phys = boxCollider({size: new THREE.Vector3(child.scale.x, child.scale.y, child.scale.z)});
+                      // console.log('phys', phys.aabb)
+                      phys.position.copy(cannonVector(child.position));
+                      phys.quaternion.copy(cannonQuat(child.quaternion));
+                      phys.aabb;
+                      phys.shapes.forEach((shape) => {
+                        shape.collisionFilterMask = ~4;
+                      });
 
-                      // phys.body.shapes.forEach((shape) => {
-                      //   shape.collisionFilterMask = ~CollisionGroups.TrimeshColliders;
-                      // });
-
-                      // this.physicsWorld.addBody(phys.body);
+                      world.addBody(phys);
                     } else if (child.userData.type === 'trimesh') {
                       let phys = getBody(child, {});
                       // console.log("phys", phys)
+                      // const geometry = child.geometry;
+                      // const indices = geometry.index.array;
+                      // console.log("indices", indices)
                       world.addBody(phys);
                     }
-
                     child.visible = false;
                   }
                 }
@@ -122,6 +124,46 @@ onMounted (()=>{
       // resolve(gltf)
       scene.add(gltf.scene)
     })
+
+    const cannonVector = (vec) =>{
+      return new CANNON.Vec3(vec.x, vec.y, vec.z);
+    }
+
+    const cannonQuat = (quat) =>{
+      return new CANNON.Quaternion(quat.x, quat.y, quat.z, quat.w);
+    }
+
+ 
+    const boxCollider = (options) => {
+      let defaults = {
+        mass: 0,
+        position: new THREE.Vector3(),
+        size: new THREE.Vector3(0.3, 0.3, 0.3),
+        friction: 0.3
+      };
+      options = setDefaults(options, defaults);
+
+      options.position = new CANNON.Vec3(options.position.x, options.position.y, options.position.z);
+      options.size = new CANNON.Vec3(options.size.x, options.size.y, options.size.z);
+
+      let mat = new CANNON.Material('boxMat');
+      mat.friction = options.friction;
+      // mat.restitution = 0.7;
+
+      let shape = new CANNON.Box(options.size);
+      // shape.material = mat;
+
+      // Add phys sphere
+      let physBox = new CANNON.Body({
+        mass: options.mass,
+        position: options.position,
+        shape
+      });
+      
+      physBox.material = mat;
+
+      return physBox;
+    }
 
     const getBody = (mesh, options) => {
   
@@ -176,6 +218,7 @@ onMounted (()=>{
         // 物体材质
         // material: sphereWorldMaterial,
     });
+    sphereBody.position.y = 150
     // 将物体添加至物理世界
     world.addBody(sphereBody);
     // 创建地面
@@ -183,25 +226,28 @@ onMounted (()=>{
     const floorBody = new CANNON.Body();
     // 当质量为0时，使得物体保持不动
     floorBody.mass = 0;
-    floorBody.addShape(floorShape);
+  
     // 位置
-    floorBody.position.set(0, 0, 0);
+    if(robotModel){
+      floorBody.position.set(robotModel.position);
+    }
+    floorBody.addShape(floorShape);
     // floorBody.position.x = -Math.PI / 2;
     // 旋转
     floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
     world.addBody(floorBody);
     // 创建一个平面
-    const planeGeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
-    const planMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      side: THREE.DoubleSide
-    });
-    const plane = new THREE.Mesh(planeGeometry, planMaterial);
-    plane.receiveShadow = true;
-    plane.rotation.x = -Math.PI / 2;
+    // const planeGeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
+    // const planMaterial = new THREE.MeshBasicMaterial({
+    //   color: 0xffffff,
+    //   side: THREE.DoubleSide
+    // });
+    // const plane = new THREE.Mesh(planeGeometry, planMaterial);
+    // plane.receiveShadow = true;
+    // plane.rotation.x = -Math.PI / 2;
     // plane.position.set(0, 0, 0);
     // plane.position.copy(floorBody.position)
-    scene.add(plane)
+    // scene.add(plane)
 
     const pointLight1 = new THREE.PointLight(0xffffff,1.0);
     const pointLight2 = new THREE.PointLight(0xffffff,1.0);
@@ -214,16 +260,15 @@ onMounted (()=>{
     // let pointLightHelper = new THREE.PointLightHelper( pointLight1, 1 );
     // scene.add( pointLightHelper );
     
-    // // 创建胶囊几何体
-    // const capsuleGeometry  = new THREE.CapsuleGeometry(0.35, 1, 32);
-    // const capsuleMaterial = new THREE.MeshBasicMaterial({
-    //   color: 0xff0000,
-    //   side: THREE.DoubleSide
-    // });
-    // const capsule = new THREE.Mesh(capsuleGeometry, capsuleMaterial)
-    // capsule.position.set(0, 0.85, 0);
-    // capsule.castShadow = true;
-    // scene.add(capsule)
+    // 创建胶囊几何体
+    const geometry = new THREE.SphereGeometry( 15, 32, 16 );
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      side: THREE.DoubleSide
+    } );
+    const sphere = new THREE.Mesh( geometry, material );
+    scene.add( sphere );
+
     const clock = new THREE.Clock();
 
     function animate() {
@@ -233,10 +278,12 @@ onMounted (()=>{
         // const result = threeToCannon(robotModel);
         // console.log('robotModel', result)
         // robotModel.position.copy(sphereBody.position)
-        sphereBody.position.copy(robotModel.position)
+        floorBody.position.set(robotModel.position);
+        sphere.position.copy(sphereBody.position)
+        sphere.quaternion.copy(sphereBody.quaternion)
       }
     
-      // capsule.quaternion.copy(sphereBody.position)
+
       stats.update();
       controls.update();
       renderer.render(scene, camera);

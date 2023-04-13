@@ -69,7 +69,6 @@ export const threeToCannon = function (object, options) {
 };
 
 threeToCannon.Type = Type;
-
 /******************************************************************************
  * Shape construction
  */
@@ -266,6 +265,7 @@ function createBoundingSphereShape (object, options) {
   var geometry = getGeometry(object);
   if (!geometry) return null;
   geometry.computeBoundingSphere();
+  console.log(geometry.computeBoundingSphere())
   return new CANNON.Sphere(geometry.boundingSphere.radius);
 }
 
